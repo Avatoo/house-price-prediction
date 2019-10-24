@@ -1,0 +1,10 @@
+Package: GnT
+Title: Go and Train
+Version: 0.0.1.0
+Authors@R: person("Ava", "Yang", email = "ayang@mango-solutions.com", role = c("aut", "cre"))
+Description: Train models in tidymodels framework
+Depends: R (>= 3.4.3)
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.1.1

@@ -1,0 +1,4 @@
+name: GnT Baseline Model
+description: >
+   Template for creating baseline model
+create_dir: FALSE

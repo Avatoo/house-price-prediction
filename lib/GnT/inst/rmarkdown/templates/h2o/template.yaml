@@ -1,0 +1,4 @@
+name: GnT h20 Model
+description: >
+   Template for creating automl model by h2o
+create_dir: FALSE

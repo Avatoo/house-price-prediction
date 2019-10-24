@@ -1,0 +1,148 @@
+---
+title: "Baseline Model"
+author: ""
+date: "`r format(lubridate::today(), '%d %b %Y')`"
+output: html_document
+
+params:
+  dpath: !R NULL
+  target_name: !R target
+  outpath: !R assets
+  name: "baseline"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# find the root directory for the project and set that as wd
+root_dir <- rprojroot::find_root(rprojroot::is_rstudio_project)
+knitr::opts_knit$set(root.dir = root_dir)
+```
+
+
+## Overview
+
+The notebook aims to:
+
+1. Train a baseline model
+2. Evaluate model performance
+3. Save the model object as asset
+
+
+## Load Libraries
+
+```{r load, message=FALSE, warning=FALSE}
+library(skimr)          # summary stats
+library(DataExplorer)   # variable profiling, EDA
+library(tidyverse)      # data manipulation
+library(tidymodels)     # modelling
+library(highcharter)    # interactive visualization
+library(janitor)        # clean column names, convert to snake case
+library(countrycode)    # feature engineering - from country to continent
+```
+
+## Import Data 
+
+```{r import, message=FALSE, warning=FALSE}
+dat <- read_csv(params$dpath) %>% 
+  rename(target = params$target_name) %>% 
+  clean_names()
+dim(dat)
+```
+ 
+ ## Preprocessing
+ 
+- Convert variable class eg. make sure date is in correct format
+- Variable validation
+- Derive new features (make sure don't introduce leakage between train and test)
+
+
+## Train and Test Split
+
+```{r split}
+set.seed(42)
+sss <- initial_split(dat, prop = 3/4)
+dat_train <- training(sss)
+dat_test <- testing(sss)
+
+dim(dat_train)
+dim(dat_test)
+```
+
+
+## Recipe 
+
+Create a recipe of steps to be taken. Apply the recipe to train and test separately. 
+
+```{r train}
+rec <- dat_train %>% 
+    recipe(target ~., data = .) %>%                         
+    update_role() %>% 
+    step_date() %>%                      # new feature - convert date data into one or more factor or numeric variables
+    step_naomit() %>%                    # remove NA obs
+    step_unknown() %>%                   # replace NA with a factor level "unknown"
+    step_medianimpute(all_numeric()) %>% # impute missing values with median of train
+    step_nzv(all_predictors()) %>%       # zero variance filter             
+    check_missing(all_predictors())      # check missing values
+
+prepped <- prep(rec)
+
+train <- prepped %>% 
+  juice()
+
+test <- prepped %>% 
+  bake(new_data = dat_test)
+```
+
+## Linear Regression
+
+```{r fit}
+fit <- linear_reg(mode = 'regression') %>%
+  parsnip::set_engine(engine = 'lm') %>%
+  fit(formula=formula(prepped), data = train)
+
+summary(fit$fit)
+```
+
+
+
+
+## Evaluation
+
+We calculate evaluation metrics on both train and test sets.
+
+NB: If the model performs much better on train than on test, it is likely to be overfitting. 
+
+### Metrics
+
+```{r model_metrics, message=FALSE, warning=FALSE}
+# train
+results_train = dat_train %>% 
+  select(target) %>% 
+  bind_cols(pred = predict(fit, new_data = train)) 
+# test
+results_test = dat_test %>% 
+  select(target) %>% 
+  bind_cols(pred = predict(fit, new_data = test))
+# combine
+list(results_train, results_test) %>% 
+  map_dfc(~ yardstick::metrics(truth=target, estimate=.pred, data=.x)) %>% 
+  select(-contains('.estimator')) %>% 
+  select(-.metric1) %>% 
+  set_names('Metric', 'Train Score', 'Test Score')
+```
+
+
+
+### Comparison of actuals VS predictions
+
+```{r actual_vs_pred, message=FALSE, warning=FALSE}
+GnT::skplot_actual_vs_pred(data = results_test, 'target', yvar = '.pred')
+```
+
+## Save Model Object
+
+```{r save, message=FALSE, warning=FALSE}
+saveRDS(fit, file.path(params$outpath, str_c(params$name, ".rds")))
+```
+

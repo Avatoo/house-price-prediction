@@ -1,0 +1,4 @@
+name: GnT RandomForest Model
+description: >
+   Template for creating random forest model
+create_dir: FALSE

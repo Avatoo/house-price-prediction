@@ -1,0 +1,56 @@
+---
+title: "Stack Models"
+author: ""
+date: "`r format(lubridate::today(), '%d %b %Y')`"
+output: html_document
+
+params:
+  dpath: !R data/boston.csv
+  outpath: !R assets
+  name: "stack"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# find the root directory for the project and set that as wd
+root_dir <- rprojroot::find_root(rprojroot::is_rstudio_project)
+knitr::opts_knit$set(root.dir = root_dir)
+```
+
+
+## Overview
+
+The notebook aims to:
+
+1. Load multiple model assets
+2. Evaluate performance across models
+3. Ensemble models
+
+
+## Load Models
+
+```{r load, message=FALSE, warning=FALSE}
+library(tidyverse)      # data manipulation
+
+mod_rds <- dir(params$outpath, pattern = ".rds", full.names = TRUE)
+mod_nms <- mod_rds %>% str_extract("^[^.]*") %>% basename() 
+mod_ls <-  mod_rds %>% 
+  map(readRDS) %>% 
+  set_names(mod_nms)
+```
+
+## Compare Metric Scores across Models
+
+```{r scores}
+transpose(mod_ls)$scores %>% 
+  bind_rows(.id = 'Model') %>% 
+  split(.$Metric) %>% 
+  map(arrange, desc(`Test Score`)) %>% 
+  map(knitr::kable)
+```
+
+
+## Question: choose champion or ensemble everyone?
+
+

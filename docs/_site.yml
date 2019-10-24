@@ -1,0 +1,26 @@
+name: "houseprice-website"
+navbar:
+  title: ""
+  left:
+    - text: "Home"
+      icon: fa-home
+      href: index.html
+    - text: "Data Profilling"
+      href: 01-eda.html      
+    - text: "Models"
+      menu:
+        - text: "Baseline"
+          href: 02-baseline.html
+        - text: "Better features"
+          href: 03-features.html
+        - text: "Random Forest"
+          href: 04-rf.html
+        - text: "H2O automl"
+          href: 05-h2o.html  
+    - text: "Stack"
+      href: 99-stack.html          
+    - text: "About"
+      href: about.html
+output:
+  html_document:
+    theme: cosmo
