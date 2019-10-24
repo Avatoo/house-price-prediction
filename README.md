@@ -1,4 +1,4 @@
-## Boston house price prediction using tidymodels
+## Boston house price prediction the tidymodels way
 
 - Create prescriptive profiling data report
 - Check on data quality
